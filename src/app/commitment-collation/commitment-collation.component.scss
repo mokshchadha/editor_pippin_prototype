@@ -1,0 +1,315 @@
+.commitment-container {
+  padding: 20px;
+  max-width: 1000px;
+  margin: 0 auto;
+  font-family: 'Inter', sans-serif;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      color: #2c3e50;
+      font-weight: 600;
+    }
+
+    .preview-btn {
+      padding: 10px 24px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+      transition: all 0.2s;
+
+      &:hover {
+        background-color: #0056b3;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px rgba(0, 123, 255, 0.3);
+      }
+    }
+  }
+
+  .editors-list {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+
+    .editor-card {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+      .card-header {
+        background-color: #f8f9fa;
+        padding: 12px 20px;
+        border-bottom: 1px solid #e0e0e0;
+        display: flex;
+        align-items: center;
+
+        .drag-handle {
+          color: #adb5bd;
+          margin-right: 12px;
+          cursor: grab;
+          font-size: 18px;
+        }
+
+        .language-name-input {
+          margin: 0;
+          font-size: 16px;
+          color: #007bff;
+          font-weight: 500;
+          border: 1px solid transparent;
+          background: transparent;
+          padding: 4px 8px;
+          border-radius: 4px;
+          outline: none;
+          transition: all 0.2s;
+          width: 100%;
+
+          &:hover {
+            background-color: rgba(0, 123, 255, 0.05);
+          }
+
+          &:focus {
+            background-color: #fff;
+            border-color: #80bdff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+          }
+        }
+      }
+
+      .card-body {
+        padding: 0;
+
+        /* Quill editor styling */
+        ::ng-deep quill-editor {
+          display: block;
+
+          .ql-toolbar {
+            border: none !important;
+            border-bottom: 1px solid #e0e0e0 !important;
+            background-color: #fafafa;
+            padding: 8px;
+
+            .ql-formats {
+              margin-right: 15px;
+            }
+
+            button {
+              width: 28px;
+              height: 28px;
+
+              &:hover {
+                background-color: rgba(0, 123, 255, 0.1);
+                border-radius: 4px;
+              }
+
+              &.ql-active {
+                background-color: rgba(0, 123, 255, 0.15);
+                border-radius: 4px;
+              }
+            }
+          }
+
+          .ql-container {
+            border: none !important;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+
+            .ql-editor {
+              min-height: 200px;
+              padding: 15px 20px;
+
+              &.ql-blank::before {
+                color: #adb5bd;
+                font-style: normal;
+              }
+            }
+          }
+        }
+      }
+
+      .card-footer {
+        padding: 10px 20px;
+        border-top: 1px solid #f0f0f0;
+        background: #fff;
+
+        .documents-label {
+          font-size: 12px;
+          color: #999;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: 5px;
+        }
+
+        .attached-docs {
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+
+          .doc-chip {
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+            color: #555;
+            background: #f1f3f4;
+            padding: 4px 8px;
+            border-radius: 4px;
+
+            .icon {
+              margin-right: 6px;
+              font-size: 14px;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+/* Spotlight Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.4);
+  /* Dimmed background */
+  backdrop-filter: blur(4px);
+  /* Blur effect */
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 15vh;
+  /* Positioned slightly from top like Spotlight */
+  z-index: 2000;
+}
+
+.modal-content {
+  background: white;
+  width: 600px;
+  max-width: 90%;
+  border-radius: 12px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+  .search-bar {
+    padding: 16px;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    align-items: center;
+
+    .search-icon {
+      font-size: 20px;
+      color: #999;
+      margin-right: 12px;
+    }
+
+    input {
+      flex: 1;
+      font-size: 20px;
+      border: none;
+      outline: none;
+      color: #333;
+
+      &::placeholder {
+        color: #bbb;
+      }
+    }
+  }
+
+  .document-list {
+    list-style: none;
+    padding: 8px 0;
+    margin: 0;
+    max-height: 400px;
+    overflow-y: auto;
+
+    li {
+      padding: 10px 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+
+      &.selected,
+      &:hover {
+        background-color: #007bff;
+        color: white;
+
+        .doc-icon {
+          color: white;
+        }
+
+        .doc-name {
+          color: white;
+        }
+
+        .doc-meta {
+          color: rgba(255, 255, 255, 0.8);
+        }
+      }
+
+      .doc-icon {
+        margin-right: 14px;
+        font-size: 24px;
+        color: #5f6368;
+      }
+
+      .doc-info {
+        display: flex;
+        flex-direction: column;
+
+        .doc-name {
+          font-size: 15px;
+          font-weight: 500;
+          color: #333;
+        }
+
+        .doc-meta {
+          font-size: 12px;
+          color: #888;
+        }
+      }
+
+      &.no-results {
+        color: #888;
+        justify-content: center;
+        padding: 30px;
+        cursor: default;
+
+        &:hover {
+          background: none;
+          color: #888;
+        }
+      }
+    }
+  }
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}

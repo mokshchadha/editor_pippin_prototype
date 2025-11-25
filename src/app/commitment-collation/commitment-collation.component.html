@@ -1,0 +1,58 @@
+<div class="commitment-container">
+  <div class="header">
+    <h1>Commitment Language Collations</h1>
+    <button class="preview-btn" (click)="previewCommitment()">Preview Commitment</button>
+  </div>
+
+  <div class="editors-list">
+    <div *ngFor="let lang of languages()" class="editor-card">
+      <div class="card-header">
+        <span class="drag-handle">⋮⋮</span>
+        <input [(ngModel)]="lang.name" class="language-name-input" placeholder="Commitment Name" />
+      </div>
+      <div class="card-body">
+        <quill-editor [(ngModel)]="lang.content" [modules]="quillModules" (onEditorCreated)="onEditorCreated($event)"
+          [styles]="{height: '200px'}" placeholder="Enter commitment content...">
+        </quill-editor>
+      </div>
+      <!-- Optional: Show attached docs if we were tracking them per language, 
+           for now just a placeholder to match the visual style of the screenshot if needed,
+           but sticking to functional requirement of link in editor. 
+           I'll leave a small footer area for visual balance. -->
+      <div class="card-footer" *ngIf="lang.content.includes('<a href')">
+        <div class="documents-label">Linked Documents</div>
+        <div class="attached-docs">
+          <!-- Simple parsing to show chips for links - purely visual enhancement -->
+          <div class="doc-chip">
+            <span class="icon">📄</span>
+            <span>Document Linked</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button class="add-commitment-btn" (click)="addCommitment()">+ Add Commitment</button>
+  </div>
+
+  <!-- Spotlight Modal -->
+  <div class="modal-overlay" *ngIf="isModalOpen()" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="search-bar">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="Search documents..." [ngModel]="searchQuery()"
+          (ngModelChange)="searchQuery.set($event)" #searchInput (keydown.escape)="closeModal()">
+      </div>
+      <ul class="document-list">
+        <li *ngFor="let doc of filteredDocuments" (click)="selectDocument(doc)">
+          <span class="doc-icon">📄</span>
+          <div class="doc-info">
+            <span class="doc-name">{{ doc.name }}</span>
+            <span class="doc-meta">{{ doc.path }}</span>
+          </div>
+        </li>
+        <li *ngIf="filteredDocuments.length === 0" class="no-results">
+          No documents found
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
