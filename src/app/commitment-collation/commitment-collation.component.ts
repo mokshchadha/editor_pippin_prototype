@@ -1,4 +1,4 @@
-import { Component, signal, WritableSignal } from '@angular/core';
+import { Component, signal, WritableSignal, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { QuillModule } from 'ngx-quill';
 import { FormsModule } from '@angular/forms';
@@ -27,10 +27,9 @@ interface DocumentItem {
   templateUrl: './commitment-collation.component.html',
   styleUrl: './commitment-collation.component.scss'
 })
-export class CommitmentCollationComponent {
-  languages: WritableSignal<CommitmentLanguage[]> = signal([
-    { code: '001', name: 'Commitment Name', content: '' }
-  ]);
+export class CommitmentCollationComponent implements OnInit {
+  private readonly STORAGE_KEY = 'COMMITMENT_COLLATION_DATA';
+  languages: WritableSignal<CommitmentLanguage[]> = signal([]);
 
   documents: DocumentItem[] = [
     { id: '1', name: 'Project_Plan.pdf', path: '/docs/Project_Plan.pdf' },
@@ -65,6 +64,7 @@ export class CommitmentCollationComponent {
   };
 
   lastActiveEditor: Quill | null = null;
+  lastActiveLanguage: CommitmentLanguage | null = null;
 
   constructor(private http: HttpClient) {
     const Link = Quill.import('formats/link') as any;
@@ -80,11 +80,38 @@ export class CommitmentCollationComponent {
     Quill.register(MyLink, true);
   }
 
-  onEditorCreated(quill: Quill) {
+  ngOnInit() {
+    this.loadFromLocalStorage();
+    if (this.languages().length === 0) {
+      this.languages.set([{ code: '001', name: 'Commitment Name', content: '' }]);
+    }
+  }
+
+  saveToLocalStorage() {
+    try {
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.languages()));
+    } catch (e) {
+      console.error('Error saving to localStorage', e);
+    }
+  }
+
+  private loadFromLocalStorage() {
+    try {
+      const stored = localStorage.getItem(this.STORAGE_KEY);
+      if (stored) {
+        this.languages.set(JSON.parse(stored));
+      }
+    } catch (e) {
+      console.error('Error loading from localStorage', e);
+    }
+  }
+
+  onEditorCreated(quill: Quill, lang: CommitmentLanguage) {
     this.editors.push(quill);
     quill.on('selection-change', (range) => {
       if (range) {
         this.lastActiveEditor = quill;
+        this.lastActiveLanguage = lang;
       }
     });
   }
@@ -114,6 +141,14 @@ export class CommitmentCollationComponent {
           activeEditor.insertText(range.index, doc.name, 'link', doc.path);
           activeEditor.setSelection(range.index + doc.name.length, 0);
         }
+
+        // Programmatic changes don't always trigger ngModelChange, so we manually update and save
+        if (this.lastActiveLanguage) {
+          // getSemanticHTML() is preferred, but innerHTML is safer if getSemanticHTML is not available in this version
+          // using the editor's root innerHTML to capture the current state
+          this.lastActiveLanguage.content = activeEditor.root.innerHTML; 
+          this.saveToLocalStorage();
+        }
       }
     }
     this.closeModal();
@@ -128,9 +163,27 @@ export class CommitmentCollationComponent {
         content: '' 
       }
     ]);
+    this.saveToLocalStorage();
+  }
+
+  deleteCommitment(index: number) {
+    if (confirm('Are you sure you want to delete this commitment?')) {
+      this.languages.update(langs => langs.filter((_, i) => i !== index));
+      this.saveToLocalStorage();
+      
+      // If we deleted the active one, clear the reference to avoid stale state updates
+      if (this.lastActiveLanguage && !this.languages().includes(this.lastActiveLanguage)) {
+        this.lastActiveLanguage = null;
+      }
+    }
   }
 
   async previewCommitment() {
+    // Ensure we are using the latest from storage as requested, 
+    // though in this single-page app state memory is usually sufficient.
+    // We will re-read to be safe and strictly follow "refer to local storage".
+    this.loadFromLocalStorage(); 
+
     try {
       const templateData = await this.http.get('commitment_Template.docx', { responseType: 'arraybuffer' }).toPromise();
       
