@@ -193,7 +193,9 @@ export class CommitmentCollationComponent {
 
     const nodes = Array.from(div.childNodes);
     
-    if (!html.includes('<p>') && !html.includes('<P>')) {
+    // Check if the HTML is likely a single block without P tags.
+    // We add checks for OL/UL to avoid wrapping them if they occur at root level.
+    if (!html.includes('<p>') && !html.includes('<P>') && !html.includes('<ol>') && !html.includes('<ul>')) {
       wml += '<w:p>';
       nodes.forEach(node => {
         wml += this.processNodeContent(node);
@@ -206,14 +208,24 @@ export class CommitmentCollationComponent {
           const childWml = this.processNodeContent(node);
           wml += childWml || '<w:r><w:t></w:t></w:r>';
           wml += '</w:p>';
+        } else if (node.nodeName === 'OL' || node.nodeName === 'UL') {
+          wml += this.processList(node as HTMLElement);
         } else if (node.nodeType === Node.TEXT_NODE && node.textContent?.trim()) {
           wml += '<w:p>';
           wml += this.processNodeContent(node);
           wml += '</w:p>';
         } else if (node.nodeType === Node.ELEMENT_NODE) {
-          wml += '<w:p>';
-          wml += this.processNodeContent(node);
-          wml += '</w:p>';
+           // Fallback for other block elements or inline elements behaving as blocks at root
+           if (node.nodeName === 'DIV' || node.nodeName === 'H1' || node.nodeName === 'H2' || node.nodeName === 'H3' || node.nodeName === 'H4' || node.nodeName === 'H5' || node.nodeName === 'H6') {
+             // Treat headings as paragraphs for now, optionally could add styling
+             wml += '<w:p>';
+             wml += this.processNodeContent(node);
+             wml += '</w:p>';
+           } else {
+             wml += '<w:p>';
+             wml += this.processNodeContent(node);
+             wml += '</w:p>';
+           }
         }
       });
     }
@@ -221,7 +233,34 @@ export class CommitmentCollationComponent {
     return wml || '<w:p><w:r><w:t></w:t></w:r></w:p>';
   }
 
-  private processNodeContent(node: Node): string {
+  private processList(listNode: HTMLElement, level: number = 0): string {
+    let wml = '';
+    const isOrdered = listNode.nodeName === 'OL';
+    
+    Array.from(listNode.childNodes).forEach((child, index) => {
+      if (child.nodeName === 'LI') {
+         wml += '<w:p>';
+         
+         const indentKey = 720 * (level + 1); 
+         wml += `<w:pPr><w:pStyle w:val="ListParagraph"/><w:ind w:left="${indentKey}" w:hanging="360"/></w:pPr>`;
+         
+         wml += '<w:r><w:t xml:space="preserve">';
+         if (isOrdered) {
+           wml += `${index + 1}. `;
+         } else {
+           wml += '• '; 
+         }
+         wml += '</w:t></w:r>';
+
+         wml += this.processNodeContent(child, level);
+         wml += '</w:p>';
+      }
+    });
+
+    return wml;
+  }
+
+  private processNodeContent(node: Node, level: number = 0): string {
     let wml = '';
     
     if (node.nodeType === Node.TEXT_NODE) {
@@ -259,23 +298,23 @@ export class CommitmentCollationComponent {
         wml += `<w:r><w:rPr>${highlight}</w:rPr><w:t xml:space="preserve">${this.escapeXml(node.textContent || '')}</w:t></w:r>`;
       } else if (node.hasChildNodes()) {
         Array.from(node.childNodes).forEach(child => {
-          wml += this.processNodeContent(child);
+          wml += this.processNodeContent(child, level);
         });
       } else {
         wml += `<w:r><w:t xml:space="preserve">${this.escapeXml(node.textContent || '')}</w:t></w:r>`;
       }
     } else if (node.nodeName === 'OL' || node.nodeName === 'UL') {
-      Array.from(node.childNodes).forEach(child => {
-        if (child.nodeName === 'LI') {
-          wml += '</w:p><w:p>';
-          wml += this.processNodeContent(child);
-        }
-      });
+      // Handle nested lists: Close current P, start list Ps, Open new P.
+      // Note: This relies on the Caller wrapping the result in <w:p>.
+      // The assumption is processNodeContent is called INSIDE a <w:p>.
+      wml += '</w:p>';
+      wml += this.processList(node as HTMLElement, level + 1);
+      wml += '<w:p>';
     } else if (node.nodeName === 'BR') {
       wml += '<w:r><w:br/></w:r>';
     } else if (node.hasChildNodes()) {
       Array.from(node.childNodes).forEach(child => {
-        wml += this.processNodeContent(child);
+        wml += this.processNodeContent(child, level);
       });
     }
 
