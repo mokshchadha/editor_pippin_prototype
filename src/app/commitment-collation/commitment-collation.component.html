@@ -8,10 +8,10 @@
     <div *ngFor="let lang of languages()" class="editor-card">
       <div class="card-header">
         <span class="drag-handle">⋮⋮</span>
-        <input [(ngModel)]="lang.name" class="language-name-input" placeholder="Commitment Name" />
+        <input [(ngModel)]="lang.name" (ngModelChange)="saveToLocalStorage()" class="language-name-input" placeholder="Commitment Name" />
       </div>
       <div class="card-body">
-        <quill-editor [(ngModel)]="lang.content" [modules]="quillModules" (onEditorCreated)="onEditorCreated($event)"
+        <quill-editor [(ngModel)]="lang.content" (ngModelChange)="saveToLocalStorage()" [modules]="quillModules" (onEditorCreated)="onEditorCreated($event)"
           [styles]="{height: '200px'}" placeholder="Enter commitment content...">
         </quill-editor>
       </div>

@@ -1,4 +1,4 @@
-import { Component, signal, WritableSignal } from '@angular/core';
+import { Component, signal, WritableSignal, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { QuillModule } from 'ngx-quill';
 import { FormsModule } from '@angular/forms';
@@ -27,10 +27,9 @@ interface DocumentItem {
   templateUrl: './commitment-collation.component.html',
   styleUrl: './commitment-collation.component.scss'
 })
-export class CommitmentCollationComponent {
-  languages: WritableSignal<CommitmentLanguage[]> = signal([
-    { code: '001', name: 'Commitment Name', content: '' }
-  ]);
+export class CommitmentCollationComponent implements OnInit {
+  private readonly STORAGE_KEY = 'COMMITMENT_COLLATION_DATA';
+  languages: WritableSignal<CommitmentLanguage[]> = signal([]);
 
   documents: DocumentItem[] = [
     { id: '1', name: 'Project_Plan.pdf', path: '/docs/Project_Plan.pdf' },
@@ -78,6 +77,32 @@ export class CommitmentCollationComponent {
       }
     }
     Quill.register(MyLink, true);
+  }
+
+  ngOnInit() {
+    this.loadFromLocalStorage();
+    if (this.languages().length === 0) {
+      this.languages.set([{ code: '001', name: 'Commitment Name', content: '' }]);
+    }
+  }
+
+  saveToLocalStorage() {
+    try {
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.languages()));
+    } catch (e) {
+      console.error('Error saving to localStorage', e);
+    }
+  }
+
+  private loadFromLocalStorage() {
+    try {
+      const stored = localStorage.getItem(this.STORAGE_KEY);
+      if (stored) {
+        this.languages.set(JSON.parse(stored));
+      }
+    } catch (e) {
+      console.error('Error loading from localStorage', e);
+    }
   }
 
   onEditorCreated(quill: Quill) {
@@ -128,9 +153,15 @@ export class CommitmentCollationComponent {
         content: '' 
       }
     ]);
+    this.saveToLocalStorage();
   }
 
   async previewCommitment() {
+    // Ensure we are using the latest from storage as requested, 
+    // though in this single-page app state memory is usually sufficient.
+    // We will re-read to be safe and strictly follow "refer to local storage".
+    this.loadFromLocalStorage(); 
+
     try {
       const templateData = await this.http.get('commitment_Template.docx', { responseType: 'arraybuffer' }).toPromise();
       
