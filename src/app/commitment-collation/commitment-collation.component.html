@@ -5,13 +5,14 @@
   </div>
 
   <div class="editors-list">
-    <div *ngFor="let lang of languages()" class="editor-card">
+    <div *ngFor="let lang of languages(); let i = index" class="editor-card">
       <div class="card-header">
         <span class="drag-handle">⋮⋮</span>
         <input [(ngModel)]="lang.name" (ngModelChange)="saveToLocalStorage()" class="language-name-input" placeholder="Commitment Name" />
+        <button class="delete-btn" (click)="deleteCommitment(i)" title="Delete Commitment">🗑️</button>
       </div>
       <div class="card-body">
-        <quill-editor [(ngModel)]="lang.content" (ngModelChange)="saveToLocalStorage()" [modules]="quillModules" (onEditorCreated)="onEditorCreated($event)"
+        <quill-editor [(ngModel)]="lang.content" (ngModelChange)="saveToLocalStorage()" [modules]="quillModules" (onEditorCreated)="onEditorCreated($event, lang)"
           [styles]="{height: '200px'}" placeholder="Enter commitment content...">
         </quill-editor>
       </div>

@@ -64,6 +64,7 @@ export class CommitmentCollationComponent implements OnInit {
   };
 
   lastActiveEditor: Quill | null = null;
+  lastActiveLanguage: CommitmentLanguage | null = null;
 
   constructor(private http: HttpClient) {
     const Link = Quill.import('formats/link') as any;
@@ -105,11 +106,12 @@ export class CommitmentCollationComponent implements OnInit {
     }
   }
 
-  onEditorCreated(quill: Quill) {
+  onEditorCreated(quill: Quill, lang: CommitmentLanguage) {
     this.editors.push(quill);
     quill.on('selection-change', (range) => {
       if (range) {
         this.lastActiveEditor = quill;
+        this.lastActiveLanguage = lang;
       }
     });
   }
@@ -139,6 +141,14 @@ export class CommitmentCollationComponent implements OnInit {
           activeEditor.insertText(range.index, doc.name, 'link', doc.path);
           activeEditor.setSelection(range.index + doc.name.length, 0);
         }
+
+        // Programmatic changes don't always trigger ngModelChange, so we manually update and save
+        if (this.lastActiveLanguage) {
+          // getSemanticHTML() is preferred, but innerHTML is safer if getSemanticHTML is not available in this version
+          // using the editor's root innerHTML to capture the current state
+          this.lastActiveLanguage.content = activeEditor.root.innerHTML; 
+          this.saveToLocalStorage();
+        }
       }
     }
     this.closeModal();
@@ -154,6 +164,18 @@ export class CommitmentCollationComponent implements OnInit {
       }
     ]);
     this.saveToLocalStorage();
+  }
+
+  deleteCommitment(index: number) {
+    if (confirm('Are you sure you want to delete this commitment?')) {
+      this.languages.update(langs => langs.filter((_, i) => i !== index));
+      this.saveToLocalStorage();
+      
+      // If we deleted the active one, clear the reference to avoid stale state updates
+      if (this.lastActiveLanguage && !this.languages().includes(this.lastActiveLanguage)) {
+        this.lastActiveLanguage = null;
+      }
+    }
   }
 
   async previewCommitment() {
